@@ -1,7 +1,7 @@
 #define SFALL_SC_EVALUATION   (true)
 
 #define COMBINE_VERSION       (1)
-#define SCRIPT_VERSION        " [Advanced v.1.3.5]"
+#define SCRIPT_VERSION        " [Advanced v.1.3.6]"
 
 #include "..\m_headers\define.h"
 #include "..\m_headers\command.h"
@@ -148,10 +148,11 @@ variable begin
    //COMBINE_VERSION
    CNTR_USE, used, usedSkill;
    
+   skill_object;
 end
 
 procedure start begin
-variable unsafe, counter, item, pid;
+   variable unsafe, counter, item, pid;
 
    if game_loaded then begin
                                                                                 // for sFall 4.0+
@@ -211,6 +212,8 @@ variable unsafe, counter, item, pid;
    end 
    else if enable_filter then begin
          
+       ////////// Check object region ////////////////
+
        if (get_game_mode BWAND INTFACELOOT) then begin
            if not(loot_once) then begin
                loot_once := true;
@@ -224,13 +227,19 @@ variable unsafe, counter, item, pid;
        #if COMBINE_VERSION
                 else if not(sfall_crafty or loot_filter) and (get_game_mode == 0) then
                         call Dude_Loot_Object; // only for standart sfall
-       
+        
+       //////////////////////////////////////////////// 
+        
        if not(sfall_crafty) and (dude_in_barter or loot_filter) and key_pressed(DIK_ESCAPE) then begin
           dude_in_barter := false;
           loot_filter := false;
        end
        #endif
-         
+       
+       if (skill_object) then
+         debug_msg("Skill Object:" + obj_name(skill_object));
+       skill_object := 0; // обнуляем
+       
        if loot_weight and loot_filter then begin
             if obj_type(contr_ptr) == OBJ_TYPE_CRITTER then begin
                call weight_loot_win(who_carry_amount(contr_ptr));
@@ -568,47 +577,61 @@ procedure filter_remove_items(variable source_objptr, variable dest_objptr, vari
 end
 
 procedure check_tile_object begin
-variable objptr, objtype;
-  
-   object_array := tile_get_objs(tile_num_in_direction(dude_tile, dude_cur_rot, 1), dude_elevation);      
+   variable objptr, objtype;
+   
+   debug_msg("Filter: Check tile object.");
+   
+   if skill_object > 0 then begin
+      debug_msg("  >>>  used skill object.");
+      object_array := create_array_list(1);
+      object_array[0] := skill_object;
+      skill_object := 0; // обнуляем     
+   end else
+      object_array := tile_get_objs(tile_num_in_direction(dude_tile, dude_cur_rot, 1), dude_elevation);  
+      
    //находим в массиве первый найденный контейнер
    foreach (objptr in object_array) begin
-      if objptr != 0 then objtype := obj_item_subtype(objptr);
+      if objptr != 0 then 
+         objtype := obj_item_subtype(objptr);
       if objtype == item_type_container then begin    // это контейнер
          contr_ptr := objptr;                         // указатель на контейнер
          break;
       end
    end
+
    if objtype != item_type_container then begin
       objptr := Check_Party_Obj;       //проверка на обмен с партийцем
       if objptr != (-1) then
          contr_ptr := objptr;          // указатель на партийца
       else contr_ptr := 0;
    end 
-   else if not(sfall_crafty) then begin
-      if Trunk_Ptr != contr_ptr then contr_ptr := 0;
+   else if not(sfall_crafty) then begin // для старых оригинальных версий без LOOT
+      if Trunk_Ptr != contr_ptr then
+         contr_ptr := 0;
    end
+   
    if contr_ptr > 0 then begin
       contr_use := true;               // использует контейнер или партиец
       loot_filter := true;             // фильтровать по приципу сортировки для контейнеров
    end
    
    clear_array(object_array);          //обнулить массив
-   
 end
 
 procedure Check_Party_Obj begin
 
-   variable n;
+   variable n; 
    variable party_array := party_member_list_critters; // тут ptr
    variable len := len_array(party_array);
    
+   debug_msg("Filter: Lookup in party.");
    for (n := 1; n < len; n++) begin
       if is_in_array(party_array[n], object_array) then 
          return party_array[n]; //возвращаем указатель на партийца
    end
    
-   return -1;  //это не партийцец в массиве объекта
+   debug_msg("Filter: Object is not party member.");
+   return -1;  //нет партийцев в массиве объектов
 end
 
 procedure Move_Dude_Inv begin
@@ -709,8 +732,8 @@ end
 
 procedure restore_bags_items(variable who_ptr) begin
 
-variable i, n, w;
-
+   variable i, n, w;
+   
    if who_ptr == dude_obj then begin
       if array_exists(container_array) then begin
         n := len_array(container_array) - 1;
@@ -1225,31 +1248,39 @@ end
 procedure Dude_Loot_Object begin
    
    if not(used) and (art_anim(obj_art_fid(dude_obj)) == ANIM_magic_hands_middle) then begin
+      debug_msg("Filter: Dude loot object - pass ready."); 
       CNTR_USE := dude_tile;
       used := true;
       usedSkill := false;
    end 
    else if used then begin
       if not(anim_busy(dude_obj)) and CNTR_USE == dude_tile and not(usedSkill) then begin
+         debug_msg("Filter: Dude loot object - pass done.");
          call check_tile_object;
          CNTR_USE := -1;
          used := false;
       end 
-      else if CNTR_USE != dude_tile then used := false;
-      if usedSkill then used := false;
+      else if CNTR_USE != dude_tile then
+               used := false;
+      
+      if usedSkill then
+         used := false;
    end
    
 end
-
-procedure hUseSkills begin
-variable temp;
-
-   if not(enable_filter) then return;
-   
-   temp := get_sfall_arg;
-   temp := get_sfall_arg;  
-   if get_sfall_arg != SKILL_STEAL then usedSkill := true; // если использованно умения отличное от кражи
-
-end
 #endif
 
+procedure hUseSkills begin
+   variable temp;
+
+   if not(enable_filter) then
+      return;
+   
+   temp := get_sfall_arg;
+   temp := get_sfall_arg;  // this object
+   if get_sfall_arg != SKILL_STEAL then 
+      usedSkill := true;   // флаг использованния умения отличного от кражи
+   else 
+      skill_object := temp;
+
+end

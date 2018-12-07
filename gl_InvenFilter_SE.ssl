@@ -2,7 +2,7 @@
 #define SFALL_SC_EVALUATION   (true)
 
 #define COMBINE_VERSION       (1)
-#define SCRIPT_VERSION        " [Advanced v.1.4.6]"
+#define SCRIPT_VERSION        " [Advanced v.1.4.7]"
 
 #define iniConfigFile         "InvenFilter.ini|InventoryFilter|"
 #define genericCrtBox         create_object(PID_MELEE_THUG_MALE, 0, 2)
@@ -199,7 +199,8 @@ variable begin
    swap_win_x, swap_win_y, swap_barter_offset, swap_loot_offset;
    dudeWeightAmmunition, dudeBaseWeight, dudeExtraWeight;
 
-   btnDropAll, useBackImage, dropPress, drop_key_code;
+   btnDropAll, useBackImage, dropPress, drop_key_code, dropKeyWin;
+   prevGameMode;
 end
 
 procedure start begin
@@ -313,7 +314,8 @@ procedure start begin
            if obj_type(contr_ptr) == OBJ_TYPE_CRITTER then
               call weight_loot_win(who_carry_amount(contr_ptr), contr_ptr);
            else
-              if (contr_ptr == Trunk_Ptr) then call weight_loot_win(call_offset_r1(0x479A20, contr_ptr), 0);
+              /*if (contr_ptr == Trunk_Ptr) then*/
+              call weight_loot_win(call_offset_r1(0x479A20, contr_ptr), 0);
            call weight_win(who_carry_amount(dude_obj), 0);
            loot_weight := false;
       end
@@ -347,7 +349,10 @@ procedure DestroyFilterWin begin //inventory off
       destroy_object(critter);
    end
    if not(loot_filter) then call restore_bags_items(dude_obj);  // for player
-   if (btnDropAll and contr_use) then deleteWin("drop_win");
+   if (btnDropAll and dropKeyWin) then begin
+      deleteWin("drop_win");
+      dropKeyWin := false;
+   end
    if dude_enter_barter or contr_use then begin
       if contr_use then begin
           contr_use := false;
@@ -890,10 +895,16 @@ procedure hGameModeChange begin
    if (inventory_once and (get_sfall_arg or (dude_enter_barter and get_game_mode == DIALOG))) then begin
       call DestroyFilterWin;
    end else begin
-      if (btnDropAll and (get_game_mode bwand INTFACELOOT)) then begin
-         call CreateDropAllBtn;
+      if (btnDropAll) then begin
+         if (get_game_mode bwand INTFACELOOT) then
+            call CreateDropAllBtn;
+         else if (dropKeyWin and prevGameMode bwand INTFACELOOT) then begin
+              deleteWin("drop_win");
+              dropKeyWin := false;
+         end
       end
    end
+   prevGameMode := get_game_mode;
 end
 
 procedure hMoveItem begin
@@ -1752,6 +1763,7 @@ procedure CreateDropAllBtn begin
    AddButtonGFX("btn_drop", "PCX/inv_filter/DropAll_Dn.pcx", "PCX/inv_filter/DropAll_Up.pcx", "");
    AddButtonProc("btn_drop", key_drop_null, key_drop_null, key_drop_press, key_drop_release);
    showWin;
+   dropKeyWin := true;
 end
 
 procedure key_drop_press begin
@@ -1761,7 +1773,7 @@ procedure key_drop_press begin
       play_sfx("IB1P1XX1");
       dropPress := 1;
    end
-   if (contr_use and obj_item_subtype(contr_ptr) != item_type_container) then begin
+   if (contr_use == false or contr_use and obj_item_subtype(contr_ptr) != item_type_container) then begin
       dropPress := 2;
    end
    if (dropPress == 2 or read_int(dude_obj + (0x2C)) <= 0) then return;

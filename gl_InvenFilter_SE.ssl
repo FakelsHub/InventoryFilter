@@ -2,7 +2,7 @@
 #define SFALL_SC_EVALUATION   (true)
 
 #define COMBINE_VERSION       (1)
-#define SCRIPT_VERSION        " [Advanced v.1.5.0]"
+#define SCRIPT_VERSION        " [Advanced v.1.5.1]"
 
 #define iniConfigFile         "InvenFilter.ini|InventoryFilter|"
 #define genericCrtBox         create_object(PID_MELEE_THUG_MALE, 0, 0)
@@ -956,7 +956,8 @@ end
 procedure hGameModeChange begin
    if (enable_filter == false) then return;
 
-   if (inventory_once and (get_sfall_arg or (dude_enter_barter and get_game_mode == DIALOG))) then begin
+   if (inventory_once and (get_sfall_arg or (dude_enter_barter and get_game_mode == DIALOG)
+      or (get_game_mode == COMBAT))) then begin // удалить окна после того как был закрыт инвентарь в бою и ход перешел к NPC
       call DestroyFilterWin;
    end else begin
       if (btnDropAll) then begin

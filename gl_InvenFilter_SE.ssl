@@ -203,7 +203,7 @@ variable begin
    loot_swap_next_btn, loot_swap_back_btn;
    swap_win_x, swap_win_y, swap_barter_offset, swap_loot_offset;
 
-   btnDropAll, useBackImage, dropPress, drop_key_code, dropKeyWin;
+   btnDropAll, btnGiveAll, useBackImage, dropPress, drop_key_code, dropKeyWin;
    prevGameMode;
 
    dudeBaseMaxWeight, dudeExtraMaxWeight, dudeEquipItemsWeight, dudeMaxWeight := -1;
@@ -255,10 +255,11 @@ procedure start begin
       end
 
       if (isCrafry == false) then begin
-         drop_key_code := get_ini_setting(iniConfigFile + "DropAllButtionKey");
+         drop_key_code := get_ini_setting(iniConfigFile + "DropAllButtonKey");
          if drop_key_code < 0 then drop_key_code := 0;
          if (sfall_ver_major >= 4 and sfall_ver_minor >= 1) then begin
-            btnDropAll := get_ini_setting(iniConfigFile + "DropAllButtion");
+            btnDropAll := get_ini_setting(iniConfigFile + "DropAllButton");
+            btnGiveAll := get_ini_setting(iniConfigFile + "UseGiveAllImage");
             useBackImage  := get_ini_setting(iniConfigFile + "UseBackImage");
          end
       end
@@ -1863,7 +1864,10 @@ procedure CreateDropAllBtn begin
    variable y := (screen_height_half);
 
    variable lootObj := loot_obj;
-   if (lootObj == 0 or obj_type(lootObj) == OBJ_TYPE_CRITTER and has_trait(TRAIT_OBJECT, lootObj, OBJECT_TEAM_NUM) != 0 and critter_state(lootObj) != CRITTER_IS_DEAD) then return;
+   if (lootObj == 0
+      or (obj_type(lootObj) == OBJ_TYPE_CRITTER                    // объект является криттером
+      and has_trait(TRAIT_OBJECT, lootObj, OBJECT_TEAM_NUM) != 0   // и криттер не относится к команде игрока
+      and critter_state(lootObj) != CRITTER_IS_DEAD)) then return; // и он не мертв, то выход
 
    if (useBackImage) then begin
       create_win("drop_win", x - 205, y - 50, 55, 96);
@@ -1876,7 +1880,11 @@ procedure CreateDropAllBtn begin
       selectWin("drop_win");
       AddButton("btn_drop", 0, 0, 38, 38);
    end
-   AddButtonGFX("btn_drop", "PCX/inv_filter/DropAll_Dn.pcx", "PCX/inv_filter/DropAll_Up.pcx", "");
+
+   if (btnGiveAll and (obj_type(lootObj) == OBJ_TYPE_CRITTER and critter_state(lootObj) != CRITTER_IS_DEAD)) then
+      AddButtonGFX("btn_drop", "PCX/inv_filter/GiveAll_Dn.pcx", "PCX/inv_filter/GiveAll_Up.pcx", "");
+   else
+      AddButtonGFX("btn_drop", "PCX/inv_filter/DropAll_Dn.pcx", "PCX/inv_filter/DropAll_Up.pcx", "");
    AddButtonProc("btn_drop", key_drop_null, key_drop_null, key_drop_press, key_drop_release);
    showWin;
    dropKeyWin := true;

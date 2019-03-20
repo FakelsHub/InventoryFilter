@@ -1,12 +1,22 @@
 
+/*******************************************************************************
+        Name:
+        Location:
+        Description:
+
+            Created: sFall Script Editor
+            Updated:
+*******************************************************************************/
+
 #define SFALL_SC_EVALUATION   (true)
 
 #define COMBINE_VERSION       (1)
-#define SCRIPT_VERSION        " [Advanced v.1.5.1]"
+#define SCRIPT_VERSION        " [Advanced v.1.5.5]"
 
 #define iniConfigFile         "InvenFilter.ini|InventoryFilter|"
 #define genericCrtBox         create_object(PID_MELEE_THUG_MALE, 0, 0)
 
+/* Include Files */
 #include "..\m_headers\define.h"
 #include "..\m_headers\command.h"
 #include "..\m_headers\party.h"
@@ -15,6 +25,7 @@
 #include "..\m_headers\sfall\define_extra.h"
 #include "..\m_headers\sfall\dik.h"
 
+/* Script Procedures */
 procedure start;
 procedure DestroyFilterWin;
 procedure CreateInvenFilterMenu(variable loot);
@@ -33,6 +44,7 @@ procedure check_bags_items(variable who_ptr);
 procedure restore_bags_items(variable who_ptr);
 procedure hAdjustFid;
 procedure hGameModeChange;
+procedure hMoveItemPC;
 procedure hMoveItem;
 procedure hBarter;
 procedure hKeyPress;
@@ -59,6 +71,7 @@ procedure HightlightButton(variable btn, variable flag, variable trd);
 procedure DeletePressButton;
 procedure DeletePressButtonTrd;
 procedure subDeleteButton(variable btn, variable type, variable flag);
+procedure refresh_pc_weight;
 procedure weight_win(variable weight, variable type);
 procedure weight_loot_win(variable obj);
 procedure barter_weight_win(variable weight);
@@ -66,7 +79,7 @@ procedure party_weight_win(variable weight);
 procedure print_weight(variable weight, variable maxWeight);
 procedure trader_cost_win;
 procedure hack_engine_weight(variable hack);
-critical procedure Move_Object_Inventary(variable src_obj, variable dst_obj);
+critical procedure Move_Object_Inventary(variable src_obj, variable dst_obj, variable all);
 procedure SwappingParty(variable type, variable value);
 procedure get_party_array(variable ptr_check);
 procedure swap_button_pressed(variable btn);
@@ -85,6 +98,7 @@ procedure key_drop_press;
 procedure key_drop_null;
 procedure key_drop_release;
 
+/* Defines */
 #define x_loc       (10)
 #define y_loc       (6)
 #define horiz_size  (46)  // button size
@@ -139,7 +153,7 @@ procedure key_drop_release;
 #define button_exit_loot            ((posXmouse > (screen_width_half) + 207 and posXmouse < (screen_width_half) + 223) and (posYmouse > (screen_height_half) + 92 and posYmouse < (screen_height_half) + 109))
 #define button_exit_loot_check      ((x_mouse > (screen_width_half) + 207 and x_mouse < (screen_width_half) + 223) and (y_mouse > (screen_height_half) + 92 and y_mouse < (screen_height_half) + 109))
 
-
+/* Local variables which do not need to be saved */
 variable begin
    screen_width_half, screen_height_half;
    x_mouse, y_mouse, posXmouse, posYmouse;
@@ -277,6 +291,7 @@ procedure start begin
       register_hook_proc(HOOK_USESKILL, hUseSkills);
       register_hook_proc(HOOK_GAMEMODECHANGE, hGameModeChange);
       register_hook_proc(HOOK_ADJUSTFID, hAdjustFid);
+      register_hook_proc(HOOK_INVENTORYMOVE, hMoveItemPC);
 
       set_global_script_type(1);
       if (enable_filter) then set_global_script_repeat(1 + (sfall_game_mode * 10)); // для старых сфалов без режимов нужна высокая скорость
@@ -520,7 +535,7 @@ variable begin
    weight;
 end
 
-   if loot_filter then filter_done := false;
+   /*if loot_filter then*/ filter_done := false;
 
    if filter_item_type != (-1) then
       call check_bags_items(dude_obj);
@@ -561,7 +576,6 @@ end
         move_obj_inven_to_obj(crttr, dude_obj);
         destroy_object(crttr);
         intfc := 2;
-        filter_done := true;
       end
       else begin // for dude_in_barter
          // уменьшаем максимальный вес, для того что бы игрок не смог превысить допустимый переносимый вес
@@ -593,7 +607,7 @@ end
       end
       tap_key(DIK_HOME);
    end
-
+   filter_done := true;
 end
 
 procedure filter_inventory_trader(variable filter_item_type) begin
@@ -973,6 +987,12 @@ procedure hGameModeChange begin
    prevGameMode := get_game_mode;
 end
 
+procedure hMoveItemPC begin
+   if (inven_weight) then begin
+      call refresh_pc_weight in 0; // делает небольшую задержку, чтобы правильно обновить вес
+   end
+end
+
 procedure hMoveItem begin
 /*
    critter arg1 - the critter the object is being removed from
@@ -987,6 +1007,11 @@ procedure hMoveItem begin
    if (enable_weight and loot_filter and filter_done and not(loot_weight)) then begin
       loot_weight := true;
       return;
+   end
+
+   // обновление веса в инвентаре игрока
+   if (filter_done and inven_weight and get_game_mode bwand INVENTORY) then begin
+      call refresh_pc_weight in 0; // делает небольшую задержку, чтобы правильно обновить вес
    end
 
    if (inven_weight == false or dude_enter_barter == false) then return;
@@ -1470,6 +1495,18 @@ procedure subDeleteButton(variable btn, variable type, variable flag) begin
 
 end
 
+procedure refresh_pc_weight begin
+   variable equp, item;
+   item := critter_inven_obj2(dude_obj, INVEN_TYPE_WORN);
+   if (item) then equp := proto_data(obj_pid(item), it_weight);
+   item := critter_inven_obj2(dude_obj, INVEN_TYPE_LEFT_HAND);
+   if (item) then equp += proto_data(obj_pid(item), it_weight);
+   item := critter_inven_obj2(dude_obj, INVEN_TYPE_RIGHT_HAND);
+   if (item) then equp += proto_data(obj_pid(item), it_weight);
+
+   call weight_win(who_carry_amount(dude_obj) - equp, 0);
+end
+
 procedure weight_win(variable weight, variable type) begin
    variable wMax := dudeMaxWeight if (dudeMaxWeight != -1) else dude_weight;
 
@@ -1594,11 +1631,13 @@ procedure trader_cost_win begin
       createWin("inven_caps", t_menu_x, menu_y - 20, 63, 20);
    end
 
+startcritical;
    selectWin("inven_caps");
    display("PCX/inv_filter/weight.pcx");
    SetTextColor(0.0, 1.0, 0.0);
    Format("$" + item_caps_total(trader_ptr), 0, 6, 63, 10, justifycenter);
    showWin;
+endcritical;
 
 end
 
@@ -1615,13 +1654,13 @@ procedure hack_engine_weight(variable hack) begin
 
 end
 
-procedure Move_Object_Inventary(variable src_obj, variable dst_obj) begin
+procedure Move_Object_Inventary(variable src_obj, variable dst_obj, variable all) begin
    variable flags, item_ptr, pid, slot;
 
    item_ptr := inven_ptr(src_obj, slot);
    while item_ptr do begin
       pid := obj_pid(item_ptr);
-      if (loot_filter or pid != PID_BOTTLE_CAPS) then begin
+      if (all or pid != PID_BOTTLE_CAPS) then begin //loot_filter
          flags := read_int(item_ptr + (0x24));
          if not(flags bwand (FLAG_LEFT_HAND bwor FLAG_RIGHT_HAND bwor FLAG_WORN)) then
             call filter_remove_items(src_obj, dst_obj, item_ptr, pid);
@@ -1659,7 +1698,7 @@ procedure SwappingParty(variable type, variable value) begin
    if (swap_contaner == 0) then begin
       if (current_swap_number == 0) then return;
       swap_contaner := genericCrtBox;
-      call Move_Object_Inventary(dude_obj, swap_contaner); // перемещаем инвентарь игрока
+      call Move_Object_Inventary(dude_obj, swap_contaner, loot_filter); // перемещаем инвентарь игрока
       dudeEquipItemsWeight := who_carry_amount(dude_obj);  // вес экипированных вещей
    end
 
@@ -1667,10 +1706,10 @@ procedure SwappingParty(variable type, variable value) begin
 
    if (swap_ptr != 0) then begin
       if (swap_ptr == dude_obj and ptr != dude_obj) then begin
-         call Move_Object_Inventary(dude_obj, swap_contaner); // перемещаем инвентарь игрока
+         call Move_Object_Inventary(dude_obj, swap_contaner, loot_filter); // перемещаем инвентарь игрока
          dudeEquipItemsWeight := who_carry_amount(dude_obj);
       end
-      else call Move_Object_Inventary(dude_obj, swap_ptr); //возвращаем инвентарь партийца обратно
+      else call Move_Object_Inventary(dude_obj, swap_ptr, loot_filter); //возвращаем инвентарь партийца обратно
    end
 
    swap_ptr := ptr;
@@ -1678,7 +1717,7 @@ procedure SwappingParty(variable type, variable value) begin
       move_obj_inven_to_obj(swap_contaner, dude_obj); //возвращаем инвентарь игрока обратно
    end
    else begin
-      call Move_Object_Inventary(swap_ptr, dude_obj);
+      call Move_Object_Inventary(swap_ptr, dude_obj, loot_filter);
    end
 
    // set carry
@@ -1930,7 +1969,7 @@ procedure key_drop_press begin
       return;
    end
 
-   call Move_Object_Inventary(dude_obj, lootObj);
+   call Move_Object_Inventary(dude_obj, lootObj, false);
    inventory_redraw(0);
    inventory_redraw(1);
 
@@ -1945,3 +1984,4 @@ procedure key_drop_release begin
    dropPress := 0;
    play_sfx("IB1LU1X1");
 end
+

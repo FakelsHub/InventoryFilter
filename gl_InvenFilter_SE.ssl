@@ -11,7 +11,7 @@
 #define SFALL_SC_EVALUATION   (true)
 
 #define COMBINE_VERSION       (1)
-#define SCRIPT_VERSION        " [Advanced v.1.5.5]"
+#define SCRIPT_VERSION        " [Advanced v1.5.6]"
 
 #define iniConfigFile         "InvenFilter.ini|InventoryFilter|"
 #define genericCrtBox         create_object(PID_MELEE_THUG_MALE, 0, 0)
@@ -234,7 +234,16 @@ procedure start begin
 
       build := sfall_ver_build;
       isCrafry := (build == "sfall2" or build == 509);
-      if (isCrafry) then build := 0;
+      if (isCrafry) then
+         build := 0;
+      else begin
+         unsafe := get_ini_setting("ddraw.ini|Debugging|AllowUnsafeScripting");
+         //unsafe := unsafe bwand get_ini_setting("ddraw.ini|Debugging|Enable");
+         if unsafe <= 0 then begin
+            display_msg(get_ini_string(iniConfigFile + "MsgLoad"));
+            return;
+         end
+      end
                                       // for sFall 4.0+
       sfall_game_mode := (isCrafry or sfall_ver_major > 3);
       sfall_version := (100 * sfall_ver_major) + (10 * sfall_ver_minor) + build;
@@ -246,13 +255,6 @@ procedure start begin
          end
          no_check_bags := (sfall_version >= 383);   // исправлена ошибка удаления контейнеров
          sfall_game_mode := (sfall_version >= 390); // 3.8.10
-
-         unsafe := get_ini_setting("ddraw.ini|Debugging|AllowUnsafeScripting");
-         unsafe := unsafe and get_ini_setting("ddraw.ini|Debugging|Enable");
-         if unsafe <= 0 and enable_filter then begin
-            display_msg(get_ini_string(iniConfigFile + "MsgLoad"));
-            return;
-         end
       end else no_check_bags := true; // исправлена ошибка удаления контейнеров
 
       write_int(0x45A2A0, 99999); // иcправление функции add_mult_objs_to_inven - если количество превышает 99999
@@ -656,7 +658,6 @@ variable weight, item, intfc := 3;
       set_critter_base_stat(trader_ptr, STAT_carry_amt, 0);
       set_critter_extra_stat(trader_ptr, STAT_carry_amt, partyMaxWeight - weight);
    end
-
    write_int(0x59E7EC + (read_int(0x59E948) * 4), 0);
    call_offset_v4(0x47036C, 0, -1, read_int(0x59E978), intfc); /* display_target_inventory_ */
    call_offset_v1(0x4D6F5C, read_int(0x59E964));               /* win_draw_*/
@@ -1906,7 +1907,11 @@ procedure CreateDropAllBtn begin
    if (lootObj == 0
       or (obj_type(lootObj) == OBJ_TYPE_CRITTER                    // объект является криттером
       and has_trait(TRAIT_OBJECT, lootObj, OBJECT_TEAM_NUM) != 0   // и криттер не относится к команде игрока
-      and critter_state(lootObj) != CRITTER_IS_DEAD)) then return; // и он не мертв, то выход
+      and (critter_state(lootObj) != CRITTER_IS_DEAD)              // и он не мертв, то выход
+      or (get_proto_data(obj_pid(lootObj), PROTO_CR_FLAGS) bwand CFLG_NOSTEAL))) then  // или криттер мертв и уст. флаг, то выход
+   begin
+      return;
+   end
 
    if (useBackImage) then begin
       create_win("drop_win", x - 205, y - 50, 55, 96);

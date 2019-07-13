@@ -49,6 +49,7 @@ procedure hMoveItem;
 procedure hBarter;
 procedure hKeyPress;
 procedure hMouseClick;
+procedure filter_by_key(variable keyType);
 
 procedure hUseSkills;
 procedure inven_filter_button_toggle(variable p_btn, variable spec);
@@ -177,6 +178,8 @@ variable begin
    special;
    critter;
    sec_click;
+   hotKeys;
+   r := 0.0, g := 0.9, b := 0.2; // green
 
    //for trader
    t_menu_x;
@@ -257,7 +260,7 @@ procedure start begin
          sfall_game_mode := (sfall_version >= 390); // 3.8.10
       end else no_check_bags := true; // исправлена ошибка удаления контейнеров
 
-      write_int(0x45A2A0, 99999); // иcправление функции add_mult_objs_to_inven - если количество превышает 99999
+      //write_int(0x45A2A0, 99999); // иcправление функции add_mult_objs_to_inven - если количество превышает 99999
 
       if not(enable_filter) then display_msg(get_ini_string(iniConfigFile + "MsgInfo"));
       enable_weight := get_ini_setting(iniConfigFile + "ShowWeight");
@@ -284,6 +287,18 @@ procedure start begin
          swap_all_containers := get_ini_setting(iniConfigFile + "SwapContainers");
          swap_loot_offset := get_ini_setting(iniConfigFile + "SwapLootOffset");
          swap_barter_offset := get_ini_setting(iniConfigFile + "SwapBarterOffset");
+      end
+
+      hotKeys := get_ini_section("InvenFilter.ini", "HotKeys");
+      foreach (pid : item in hotKeys) begin
+         hotKeys[pid] := atoi(item);
+      end
+      fix_array(hotKeys);
+
+      item := get_ini_setting(iniConfigFile + "TextColor");
+      switch (item) begin
+         case 1 : r := 0.7; g := 0.7; b := 0.2; // yellow
+         case 2 : r := 0.9; g := 0.9; b := 0.9; // near white
       end
 
       register_hook_proc(HOOK_KEYPRESS, hKeyPress);
@@ -1094,8 +1109,9 @@ end
 
 procedure hKeyPress begin
 
-variable type  := get_sfall_arg,
-         key   := get_sfall_arg;
+variable type  := get_sfall_arg, // event type: 1 - pressed, 0 - released
+         key   := get_sfall_arg,
+         i, k, hKey;
 
    if key == DIK_F2 and get_game_mode == 0 and type == 0 then begin
       if enable_filter then begin
@@ -1109,16 +1125,25 @@ variable type  := get_sfall_arg,
       end
       set_sfall_global("INV_FLTR", not(enable_filter));
    end
-   else if (enable_filter and key == drop_key_code and (get_game_mode bwand INTFACELOOT)) then begin
-      if (type == 1) then call key_drop_press;
-      if (type == 0) then call key_drop_release;
+   else if (enable_filter and inventory_once) then begin
+      if (key == drop_key_code and (get_game_mode bwand INTFACELOOT)) then begin
+         if (type == 1) then call key_drop_press;
+         if (type == 0) then call key_drop_release;
+      end
+      #if COMBINE_VERSION
+      else if (key == DIK_ESCAPE and type == 0 and not(sfall_game_mode) and (dude_in_barter or loot_filter)) then begin
+         dude_in_barter := false;
+         loot_filter := false;
+      end
+      #endif
+      else begin
+         foreach (k : hKey in hotKeys) begin
+            if (key == hKey) then call filter_by_key(i);
+            i++;
+         end
+      end
+      if (inventory_once and pressed_once and type == 0) then pressed_once := false;
    end
-   #if COMBINE_VERSION
-   else if (key == DIK_ESCAPE and type == 0 and not(sfall_game_mode) and (dude_in_barter or loot_filter)) then begin
-      dude_in_barter := false;
-      loot_filter := false;
-   end
-   #endif
 end
 
 procedure hMouseClick begin
@@ -1197,8 +1222,30 @@ variable type, button;
             sec_click := false;
           end
       end
-
       if pressed_once and type == 0 then pressed_once := false;
+   end
+end
+
+procedure filter_by_key(variable keyType) begin
+   if (keyType > 5 and (dude_in_barter or loot_filter) == false) then return;
+
+   switch (keyType) begin
+      case 0  : if not(btn_all) and not(loot_filter) then call inven_filter_button_pressed("all", -1, 0);
+      case 1  : if not(btn_armor) then call inven_filter_button_pressed("armor", item_type_armor, 0);
+      case 2  : if not(btn_weapon) then call inven_filter_button_pressed("weapon", item_type_weapon, 0);
+      case 3  : if not(btn_ammo) then call inven_filter_button_pressed("ammo", item_type_ammo, 0);
+      case 4  : if not(btn_drug) then call inven_filter_button_pressed("drug", item_type_drug, 0);
+      case 5  : if not(btn_misc) then begin
+                     call inven_filter_button_pressed("misc", item_type_misc_item, 0);
+                     sec_click := true;
+                end
+      // for trader/loot
+      case 6  : if not(btn_trd_all) and not(loot_filter) then call inven_filter_trd_button_pressed("all", -1);
+      case 7  : if not(btn_trd_armor) then call inven_filter_trd_button_pressed("armor", item_type_armor);
+      case 8  : if not(btn_trd_weapon) then call inven_filter_trd_button_pressed("weapon", item_type_weapon);
+      case 9  : if not(btn_trd_ammo) then call inven_filter_trd_button_pressed("ammo", item_type_ammo);
+      case 10 : if not(btn_trd_drug) then call inven_filter_trd_button_pressed("drug", item_type_drug);
+      case 11 : if not(btn_trd_misc) then call inven_filter_trd_button_pressed("misc", item_type_misc_item);
    end
 end
 
@@ -1534,12 +1581,12 @@ procedure weight_win(variable weight, variable type) begin
       if (weight > wMax) then
           SetTextColor(1.0, 0.1, 0.0);
       else
-          SetTextColor(0.0, 1.0, 0.0);
+          SetTextColor(r, g, b);
 
       if (loot_filter) then begin
          Format(weight + "/" + wMax, 0, 5, 63, 10, justifycenter);
       end else
-         Format(mstr_inventry(30) + ": " + weight, 5, 5, 63, 10, justifyleft);
+         Format(mstr_inventry(30) + ": " + weight, 7, 5, 63, 10, justifyleft);
 
       showWin;
    end
@@ -1550,7 +1597,7 @@ procedure weight_loot_win(variable obj) begin
 
    //создание окна для отображения веса предметов
    if not(inven_loot_weight) then begin
-      createWin("inven_loot_weight", t_menu_x + 1, menu_y + 150, 63, 20);
+      createWin("inven_loot_weight", t_menu_x, menu_y + 150, 63, 20);
       inven_loot_weight := true;
    end
 
@@ -1614,7 +1661,7 @@ procedure print_weight(variable weight, variable maxWeight) begin
    if (maxWeight and weight > maxWeight) then
       SetTextColor(1.0, 0.1, 0.0);
    else
-      SetTextColor(0.0, 1.0, 0.0);
+      SetTextColor(r, g, b);
 
    if (maxWeight) then
       Format(weight + "/" + maxWeight, 0, 5, 63, 10, justifycenter);
@@ -1635,7 +1682,7 @@ procedure trader_cost_win begin
 startcritical;
    selectWin("inven_caps");
    display("PCX/inv_filter/weight.pcx");
-   SetTextColor(0.0, 1.0, 0.0);
+   SetTextColor(r, g, b);
    Format("$" + item_caps_total(trader_ptr), 0, 6, 63, 10, justifycenter);
    showWin;
 endcritical;
@@ -1852,7 +1899,7 @@ procedure swap_name(variable name) begin
 
    selectWin("swap_win");
    Display("PCX/inv_filter/swap_win.pcx");
-   SetTextColor(0.0, 1.0, 0.0);
+   SetTextColor(1.0, 1.0, 1.0);
    Format(name, 0, 13, 150, 10, justifycenter);
 
 end

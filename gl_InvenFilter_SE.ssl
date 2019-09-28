@@ -11,7 +11,7 @@
 #define SFALL_SC_EVALUATION   (true)
 
 #define COMBINE_VERSION       (1)
-#define SCRIPT_VERSION        " [Advanced v1.5.8]"
+#define SCRIPT_VERSION        " [Advanced v1.5.9]"
 
 #define INI_CONFIG_FILE_SEC   "\\InventoryFilter.dat\\InvenFilter.ini|InventoryFilter|"
 #define INI_CONFIG_FILE       "\\InventoryFilter.dat\\InvenFilter.ini"
@@ -19,6 +19,7 @@
 #define genericCrtBox         create_object(PID_MELEE_THUG_MALE, 0, 0)
 
 /* Include Files */
+
 #include "..\m_headers\define.h"
 #include "..\m_headers\command.h"
 #include "..\m_headers\party.h"
@@ -29,9 +30,9 @@
 
 /* Script Procedures */
 procedure start;
-procedure DestroyFilterWin;
 procedure CreateInvenFilterMenu(variable loot);
 procedure CreateInvenFilterMenu_trader(variable loot);
+procedure DestroyFilterWin;
 
 procedure filter_inventory(variable filter_item_type, variable spec);
 procedure filter_inventory_trader(variable filter_item_type);
@@ -131,19 +132,19 @@ procedure key_drop_release;
 #define ExcludeMisc(x) (x != PID_FIRST_AID_KIT) and (x != PID_DOCTORS_BAG) and (x != PID_PARAMEDICS_BAG) and (x != PID_FIELD_MEDIC_KIT)
 #define IncludeMisc(x) (x == PID_FIRST_AID_KIT) or (x == PID_DOCTORS_BAG) or (x == PID_PARAMEDICS_BAG) or (x == PID_FIELD_MEDIC_KIT)
 
-#define inven_filter_button_all     ((posXmouse > menu_x + x_loc and posXmouse < menu_x + x_loc + horiz_size) and (posYmouse > menu_y + y_loc and posYmouse < menu_y + y_loc + 21))
-#define inven_filter_button_armor   ((posXmouse > menu_x + x_loc and posXmouse < menu_x + x_loc + horiz_size) and (posYmouse > menu_y + y_loc + vertic_size and posYmouse < menu_y + y_loc + 21 + vertic_size))
-#define inven_filter_button_weapon  ((posXmouse > menu_x + x_loc and posXmouse < menu_x + x_loc + horiz_size) and (posYmouse > menu_y + y_loc + (vertic_size*2) and posYmouse < menu_y + y_loc + 21 + (vertic_size*2)))
-#define inven_filter_button_ammo    ((posXmouse > menu_x + x_loc and posXmouse < menu_x + x_loc + horiz_size) and (posYmouse > menu_y + y_loc + (vertic_size*3) and posYmouse < menu_y + y_loc + 21 + (vertic_size*3)))
-#define inven_filter_button_drug    ((posXmouse > menu_x + x_loc and posXmouse < menu_x + x_loc + horiz_size) and (posYmouse > menu_y + y_loc + (vertic_size*4) and posYmouse < menu_y + y_loc + 21 + (vertic_size*4)))
-#define inven_filter_button_misc    ((posXmouse > menu_x + x_loc and posXmouse < menu_x + x_loc + horiz_size) and (posYmouse > menu_y + y_loc + (vertic_size*5) and posYmouse < menu_y + y_loc + 21 + (vertic_size*5)))
+#define inven_filter_button_all     ((posXmouse > menu_x + x_loc and posXmouse < menu_x + (x_loc + horiz_size)) and (posYmouse > menu_y + y_loc and posYmouse < menu_y + (y_loc + 21)))
+#define inven_filter_button_armor   ((posXmouse > menu_x + x_loc and posXmouse < menu_x + (x_loc + horiz_size)) and (posYmouse > menu_y + (y_loc + vertic_size)) and posYmouse < menu_y + (y_loc + 21 + vertic_size))
+#define inven_filter_button_weapon  ((posXmouse > menu_x + x_loc and posXmouse < menu_x + (x_loc + horiz_size)) and (posYmouse > menu_y + (y_loc + (vertic_size * 2)) and posYmouse < menu_y + (y_loc + 21 + (vertic_size * 2))))
+#define inven_filter_button_ammo    ((posXmouse > menu_x + x_loc and posXmouse < menu_x + (x_loc + horiz_size)) and (posYmouse > menu_y + (y_loc + (vertic_size * 3)) and posYmouse < menu_y + (y_loc + 21 + (vertic_size * 3))))
+#define inven_filter_button_drug    ((posXmouse > menu_x + x_loc and posXmouse < menu_x + (x_loc + horiz_size)) and (posYmouse > menu_y + (y_loc + (vertic_size * 4)) and posYmouse < menu_y + (y_loc + 21 + (vertic_size * 4))))
+#define inven_filter_button_misc    ((posXmouse > menu_x + x_loc and posXmouse < menu_x + (x_loc + horiz_size)) and (posYmouse > menu_y + (y_loc + (vertic_size * 5)) and posYmouse < menu_y + (y_loc + 21 + (vertic_size * 5))))
 
-#define inven_filter_trd_button_all     ((posXmouse > t_menu_x + x_loc and posXmouse < t_menu_x + x_loc + horiz_size) and (posYmouse > menu_y + y_loc and posYmouse < menu_y + y_loc + 21))
-#define inven_filter_trd_button_armor   ((posXmouse > t_menu_x + x_loc and posXmouse < t_menu_x + x_loc + horiz_size) and (posYmouse > menu_y + y_loc + vertic_size and posYmouse < menu_y + y_loc + 21 + vertic_size))
-#define inven_filter_trd_button_weapon  ((posXmouse > t_menu_x + x_loc and posXmouse < t_menu_x + x_loc + horiz_size) and (posYmouse > menu_y + y_loc + (vertic_size*2) and posYmouse < menu_y + y_loc + 21 + (vertic_size*2)))
-#define inven_filter_trd_button_ammo    ((posXmouse > t_menu_x + x_loc and posXmouse < t_menu_x + x_loc + horiz_size) and (posYmouse > menu_y + y_loc + (vertic_size*3) and posYmouse < menu_y + y_loc + 21 + (vertic_size*3)))
-#define inven_filter_trd_button_drug    ((posXmouse > t_menu_x + x_loc and posXmouse < t_menu_x + x_loc + horiz_size) and (posYmouse > menu_y + y_loc + (vertic_size*4) and posYmouse < menu_y + y_loc + 21 + (vertic_size*4)))
-#define inven_filter_trd_button_misc    ((posXmouse > t_menu_x + x_loc and posXmouse < t_menu_x + x_loc + horiz_size) and (posYmouse > menu_y + y_loc + (vertic_size*5) and posYmouse < menu_y + y_loc + 21 + (vertic_size*5)))
+#define inven_filter_trd_button_all     ((posXmouse > t_menu_x + x_loc and posXmouse < t_menu_x + (x_loc + horiz_size)) and (posYmouse > menu_y + y_loc and posYmouse < menu_y + (y_loc + 21)))
+#define inven_filter_trd_button_armor   ((posXmouse > t_menu_x + x_loc and posXmouse < t_menu_x + (x_loc + horiz_size)) and (posYmouse > menu_y + (y_loc + vertic_size) and posYmouse < menu_y + (y_loc + 21 + vertic_size)))
+#define inven_filter_trd_button_weapon  ((posXmouse > t_menu_x + x_loc and posXmouse < t_menu_x + (x_loc + horiz_size)) and (posYmouse > menu_y + (y_loc + (vertic_size * 2)) and posYmouse < menu_y + (y_loc + 21 + (vertic_size * 2))))
+#define inven_filter_trd_button_ammo    ((posXmouse > t_menu_x + x_loc and posXmouse < t_menu_x + (x_loc + horiz_size)) and (posYmouse > menu_y + (y_loc + (vertic_size * 3)) and posYmouse < menu_y + (y_loc + 21 + (vertic_size * 3))))
+#define inven_filter_trd_button_drug    ((posXmouse > t_menu_x + x_loc and posXmouse < t_menu_x + (x_loc + horiz_size)) and (posYmouse > menu_y + (y_loc + (vertic_size * 4)) and posYmouse < menu_y + (y_loc + 21 + (vertic_size * 4))))
+#define inven_filter_trd_button_misc    ((posXmouse > t_menu_x + x_loc and posXmouse < t_menu_x + (x_loc + horiz_size)) and (posYmouse > menu_y + (y_loc + (vertic_size * 5)) and posYmouse < menu_y + (y_loc + 21 + (vertic_size * 5))))
 
 #define swap_next_button  ((posXmouse > menu_x + swap_win_x + 121 and posXmouse < menu_x + swap_win_x + 145) and (posYmouse > menu_y + swap_win_y + 9 and posYmouse < menu_y + swap_win_y + 29))
 #define swap_back_button  ((posXmouse > menu_x + swap_win_x + 2   and posXmouse < menu_x + swap_win_x + 26)  and (posYmouse > menu_y + swap_win_y + 9 and posYmouse < menu_y + swap_win_y + 29))
@@ -236,6 +237,7 @@ procedure start begin
    variable unsafe, item, pid, build, isCrafry, iniConfig, temp;
 
    if game_loaded then begin
+
       enable_filter := not(get_sfall_global_int("INV_FLTR"));
 
       temp := get_ini_string("ddraw.ini|ExtraPatches|AutoSearchPath");
@@ -257,18 +259,15 @@ procedure start begin
       end
                                       // for sFall 4.0+
       sfall_game_mode := (isCrafry or sfall_ver_major > 3);
-      sfall_version := (100 * sfall_ver_major) + (10 * sfall_ver_minor) + build;
-
+      sfall_version := (1000 * sfall_ver_major) + (100 * sfall_ver_minor) + build;
       if not(sfall_game_mode) then begin
-         if sfall_version < 382 then begin
+         if sfall_version < 3802 then begin // 3.8.2
             display_msg("InventoryFilter advanced version requires sfall version 3.8.2(or higher), or a version by Crafty.");
             return;
          end
-         no_check_bags := (sfall_version >= 383);   // исправлена ошибка удаления контейнеров
-         sfall_game_mode := (sfall_version >= 390); // 3.8.10
+         no_check_bags := (sfall_version >= 3803);   // 3.8.3 исправлена ошибка удаления контейнеров
+         sfall_game_mode := (sfall_version >= 3810); // 3.8.10
       end else no_check_bags := true; // исправлена ошибка удаления контейнеров
-
-      //write_int(0x45A2A0, 99999); // иcправление функции add_mult_objs_to_inven - если количество превышает 99999
 
       if not(enable_filter) then display_msg(get_ini_string(iniConfigFile + "MsgInfo"));
       enable_weight := get_ini_setting(iniConfigFile + "ShowWeight");
@@ -297,21 +296,24 @@ procedure start begin
          swap_barter_offset := get_ini_setting(iniConfigFile + "SwapBarterOffset");
       end
 
-      hotKeys := get_ini_section(iniConfig, "HotKeys");
-      foreach (temp : item in hotKeys) begin
-         hotKeys[temp] := atoi(item);
+      if (sfall_version >= 4200) then begin
+         hotKeys := get_ini_section(iniConfig, "HotKeys");
+         foreach (temp : item in hotKeys) begin
+            if (typeof(item) == VALTYPE_STR) then hotKeys[temp] := atoi(item);
+         end
+         fix_array(hotKeys);
       end
-      fix_array(hotKeys);
-
       temp := get_ini_setting(iniConfigFile + "TextColor");
       switch (temp) begin
-         case 1 : r := 0.72; g := 0.72; b := 0.2; // yellow
-         case 2 : r := 0.9; g := 0.9; b := 0.9; // near white
+        case 1 : r := 0.72; g := 0.72; b := 0.2; // yellow
+        case 2 : r := 0.9; g := 0.9; b := 0.9;   // near white
       end
 
       register_hook_proc(HOOK_KEYPRESS, hKeyPress);
       register_hook_proc(HOOK_MOUSECLICK, hMouseClick);
-      register_hook_proc(HOOK_BARTERPRICE, hBarter);
+      if (sfall_version >= 4200) then  // 4.2
+         register_hook_proc_spec(HOOK_BARTERPRICE, hBarter);
+      else register_hook_proc(HOOK_BARTERPRICE, hBarter);
       register_hook_proc(HOOK_REMOVEINVENOBJ, hMoveItem);
       register_hook_proc(HOOK_USESKILL, hUseSkills);
       register_hook_proc(HOOK_GAMEMODECHANGE, hGameModeChange);
@@ -625,7 +627,7 @@ end
          end else
             call weight_win(weight, filter_item_type);
 
-         if (sfall_version >= 402) then
+         if (sfall_version >= 4002) then // 4.0.2
             display_stats;
          else
             call_offset_v0(0x471D5C);  /* display_stats_*/
@@ -984,11 +986,14 @@ end
 
 procedure hAdjustFid begin
    if (changeSwapFid and swap_ptr) then begin
+      variable fid;
       if (swap_ptr == dude_obj) then
-         set_sfall_return(savePCFID);
+         fid := savePCFID;
       else begin
-         set_sfall_return(obj_art_fid(swap_ptr) bwand 0xFF00FFFF);
+         fid := (obj_art_fid(swap_ptr) bwand 0xFF00FFFF);
       end
+      set_sfall_arg(0, fid);
+      set_sfall_return(fid);
    end
 end
 
@@ -1024,7 +1029,7 @@ procedure hMoveItem begin
    int     arg3 - a flag, or possibly the number of items to remove
    int     arg4 - The reason the object is being removed. (Actually, the site from which _item_remove_mult was called)
 */
-   variable obj, item, count, weight;
+   variable obj, item, count; //weight;
 
    if not(enable_filter) then return;
 
@@ -1080,7 +1085,7 @@ procedure hBarter begin
    int     arg8 - общая стоимость предложенных игроком товаров (отдельно можно узнать количество денег с помощью item_caps_total(arg7))
    int     arg9 - 1 если была нажата кнопка "предложения обмена" не сопартийцу, иначе 0.
 */
-   variable barter_args, caps, diff;
+   variable barter_args, caps, diff, playerCost;
 
    if not(enable_filter) then return;
 
@@ -1094,7 +1099,7 @@ procedure hBarter begin
       pc_bTable := barter_args[6];
    end
 
-   if smart_barter and barter_args[8] then begin
+   if smart_barter and barter_args[8] and party_member_obj(obj_pid(trader_ptr) == 0) then begin
       if (item_caps_total(pc_bTable) != barter_args[7]) then begin
          diff := barter_args[2] - barter_args[7]; // разница цены в предложенных товарах, отрицательное - задолженность для торговца
          if (diff < 0) then begin
@@ -1108,7 +1113,10 @@ procedure hBarter begin
          if (diff != 0) then begin
             item_caps_adjust(dude_obj, -diff);
             item_caps_adjust(trader_ptr, diff);
-            set_sfall_return(barter_args[7]);
+
+            playerCost := barter_args[7];
+            set_sfall_arg(2, playerCost);
+            set_sfall_return(playerCost); // возвращаем цену для торговца равную общей стоимости товаров игрока
          end
       end
    end
@@ -1121,7 +1129,7 @@ variable type  := get_sfall_arg, // event type: 1 - pressed, 0 - released
          key   := get_sfall_arg,
          i, k, hKey;
 
-   if key == DIK_F2 and get_game_mode == 0 and type == 0 then begin
+   if key == DIK_F11 and get_game_mode == 0 and type == 0 then begin
       if enable_filter then begin
          enable_filter := false;
          display_msg(get_ini_string(iniConfigFile + "MsgOff")); //"Inventory Filter is disabled."
@@ -1144,7 +1152,7 @@ variable type  := get_sfall_arg, // event type: 1 - pressed, 0 - released
          loot_filter := false;
       end
       #endif
-      else begin
+      else if ((get_game_mode bwand COUNTERWIN) == false) then begin
          foreach (k : hKey in hotKeys) begin
             if (key == hKey) then call filter_by_key(i);
             i++;
@@ -1799,7 +1807,7 @@ procedure SwappingParty(variable type, variable value) begin
       showWin;
    end
 
-   if (sfall_version < 414) then return;
+   if (sfall_version < 4104) then return; // 4.1.4
    if (savePCFID == 0 and swap_ptr != dude_obj) then begin
       savePCFID := obj_art_fid(dude_obj); //сохраняем фид игрока
    end

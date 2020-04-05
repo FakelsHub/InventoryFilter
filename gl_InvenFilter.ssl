@@ -1513,8 +1513,8 @@ procedure HightlightButton(variable btn, variable flag, variable trd) begin
    variable btn_name, btn_on, btn_hover;
 
    btn_name  := "filter_" + btn + "_" + flag + trd;
-   btn_on    := "PCX/inv_filter/btn_" + btn + "_on.pcx";
-   btn_hover := "PCX/inv_filter/btn_" + btn + "_hover_on.pcx";
+   btn_on    := "PCX\\inv_filter\\btn_" + btn + "_on.pcx";
+   btn_hover := "PCX\\inv_filter\\btn_" + btn + "_hover_on.pcx";
 
    selectWin("inven_filter");
    AddButtonGFX(btn_name, btn_on, btn_on, btn_hover);
@@ -1586,7 +1586,7 @@ procedure weight_win(variable weight, variable type) begin
 
    if inven_weight then begin
       selectWin("inven_weight");
-      display("PCX/inv_filter/weight.pcx");
+      display("PCX\\inv_filter\\weight.pcx");
       SetFont(1);
 
       if (current_swap_number > 0) then begin
@@ -1618,7 +1618,7 @@ procedure weight_loot_win(variable obj) begin
    end
 
    selectWin("inven_loot_weight");
-   display("PCX/inv_filter/weight.pcx");
+   display("PCX\\inv_filter\\weight.pcx");
    SetFont(1);
 
    if (obj_type(obj) == OBJ_TYPE_CRITTER) then
@@ -1644,7 +1644,7 @@ procedure barter_weight_win(variable weight) begin
    end
 
    selectWin("inven_weight");
-   display("PCX/inv_filter/weight.pcx");
+   display("PCX\\inv_filter\\weight.pcx");
 
    if (current_swap_number > 0) then begin
       weight += who_carry_amount(swap_ptr); // swap-critter current equip items
@@ -1663,7 +1663,7 @@ procedure party_weight_win(variable weight) begin
    end
 
    selectWin("inven_party_weight");
-   display("PCX/inv_filter/weight.pcx");
+   display("PCX\\inv_filter\\weight.pcx");
 
    weight += who_carry_amount(trader_ptr);
    weight += who_carry_amount(pc_bTable);
@@ -1697,7 +1697,7 @@ procedure trader_cost_win begin
 
 startcritical;
    selectWin("inven_caps");
-   display("PCX/inv_filter/weight.pcx");
+   display("PCX\\inv_filter\\weight.pcx");
    SetTextColor(r, g, b);
    Format("$" + item_caps_total(trader_ptr), 0, 6, 63, 10, justifycenter);
    showWin;
@@ -1900,10 +1900,10 @@ procedure create_swap_win(variable x_offset, variable y_offset) begin
    call swap_name(obj_name(dude_obj));
 
    AddButton("btn_next", 123, 9, 23, 20);
-   AddButtonGFX("btn_next", "PCX/inv_filter/right_dn.pcx", "PCX/inv_filter/right_up.pcx", "");
+   AddButtonGFX("btn_next", "PCX\\inv_filter\\right_dn.pcx", "PCX\\inv_filter\\right_up.pcx", "");
 
    AddButton("btn_back", 4, 9, 23, 20);
-   AddButtonGFX("btn_back", "PCX/inv_filter/left_dn.pcx", "PCX/inv_filter/left_up.pcx", "");
+   AddButtonGFX("btn_back", "PCX\\inv_filter\\left_dn.pcx", "PCX\\inv_filter\\left_up.pcx", "");
 
    showWin;
 
@@ -1917,7 +1917,7 @@ end
 procedure swap_name(variable name) begin
 
    selectWin("swap_win");
-   Display("PCX/inv_filter/swap_win.pcx");
+   Display("PCX\\inv_filter\\swap_win.pcx");
    SetTextColor(1.0, 1.0, 1.0);
    Format(name, 0, 13, 150, 10, justifycenter);
 
@@ -1927,7 +1927,7 @@ procedure swap_loot_next_btn(variable pressed) begin
    variable btn_next, type := "up";
    if (pressed) then type := "dn";
 
-   btn_next := "PCX/inv_filter/right_" + type + ".pcx";
+   btn_next := "PCX\\inv_filter\\right_" + type + ".pcx";
    selectWin("swap_win");
    AddButtonGFX("btn_next", "", btn_next, "");
    showWin;
@@ -1938,7 +1938,7 @@ procedure swap_loot_back_btn(variable pressed) begin
    variable btn_back, type := "up";
    if (pressed) then type := "dn";
 
-   btn_back := "PCX/inv_filter/left_" + type + ".pcx";
+   btn_back := "PCX\\inv_filter\\left_" + type + ".pcx";
    selectWin("swap_win");
    AddButtonGFX("btn_back", "", btn_back, "");
    showWin;
@@ -1981,7 +1981,7 @@ procedure CreateDropAllBtn begin
    if (useBackImage) then begin
       create_win("drop_win", x - 205, y - 50, 55, 96);
       selectWin("drop_win");
-      Display("PCX/inv_filter/DropAll_Back.pcx");
+      Display("PCX\\inv_filter\\DropAll_Back.pcx");
       AddButton("btn_drop", 7, 13, 40, 40);
    end
    else begin
@@ -1991,9 +1991,9 @@ procedure CreateDropAllBtn begin
    end
 
    if (btnGiveAll and (obj_type(lootObj) == OBJ_TYPE_CRITTER and critter_state(lootObj) != CRITTER_IS_DEAD)) then
-      AddButtonGFX("btn_drop", "PCX/inv_filter/GiveAll_Dn.pcx", "PCX/inv_filter/GiveAll_Up.pcx", "");
+      AddButtonGFX("btn_drop", "PCX\\inv_filter\\GiveAll_Dn.pcx", "PCX\\inv_filter\\GiveAll_Up.pcx", "");
    else
-      AddButtonGFX("btn_drop", "PCX/inv_filter/DropAll_Dn.pcx", "PCX/inv_filter/DropAll_Up.pcx", "");
+      AddButtonGFX("btn_drop", "PCX\\inv_filter\\DropAll_Dn.pcx", "PCX\\inv_filter\\DropAll_Up.pcx", "");
    AddButtonProc("btn_drop", key_drop_null, key_drop_null, key_drop_press, key_drop_release);
    showWin;
    dropKeyWin := true;

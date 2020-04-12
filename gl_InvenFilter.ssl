@@ -166,7 +166,7 @@ procedure key_drop_release;
 
 /* Local variables which do not need to be saved */
 variable begin
-   iniConfigFile;
+   iniConfig;
    screen_width_half, screen_height_half;
    x_mouse, y_mouse, posXmouse, posYmouse;
 
@@ -210,7 +210,7 @@ variable begin
    filter_done := true;
    loot_weight;
    pc_bTable, tr_bTable;
-   smart_barter;
+   smart_barter, trade_money_msg;
 
    container_array;
    container_count_array;
@@ -239,7 +239,7 @@ variable begin
 end
 
 procedure start begin
-   variable unsafe, item, pid, build, isCrafry, iniConfig, temp;
+   variable unsafe, item, pid, build, isCrafry, iniConfigFile, temp;
 
    if game_loaded then begin
 
@@ -247,8 +247,8 @@ procedure start begin
 
       temp := get_ini_string("ddraw.ini|ExtraPatches|AutoSearchPath");
       if temp == "" then temp := "mods";
-      iniConfig := temp + INI_CONFIG_FILE;
-      iniConfigFile := temp + INI_CONFIG_FILE_SEC;
+      iniConfigFile := temp + INI_CONFIG_FILE;
+      iniConfig := temp + INI_CONFIG_FILE_SEC;
 
       build := sfall_ver_build;
       isCrafry := (build == "sfall2" or build == 509);
@@ -258,7 +258,7 @@ procedure start begin
          unsafe := get_ini_setting("ddraw.ini|Debugging|AllowUnsafeScripting");
          //unsafe := unsafe bwand get_ini_setting("ddraw.ini|Debugging|Enable");
          if unsafe <= 0 then begin
-            display_msg(get_ini_string(iniConfigFile + "MsgLoad"));
+            display_msg(get_ini_string(iniConfig + "MsgLoad"));
             return;
          end
       end
@@ -274,36 +274,37 @@ procedure start begin
          sfall_game_mode := (sfall_version >= 3810); // 3.8.10
       end else no_check_bags := true; // исправлена ошибка удаления контейнеров
 
-      if not(enable_filter) then display_msg(get_ini_string(iniConfigFile + "MsgInfo"));
-      enable_weight := get_ini_setting(iniConfigFile + "ShowWeight");
-      enable_caps := get_ini_setting(iniConfigFile + "ShowCaps");
-      smart_barter := get_ini_setting(iniConfigFile + "SmartBarter");
+      if not(enable_filter) then display_msg(get_ini_string(iniConfig + "MsgInfo"));
+      enable_weight := get_ini_setting(iniConfig + "ShowWeight");
+      enable_caps := get_ini_setting(iniConfig + "ShowCaps");
+      smart_barter := get_ini_setting(iniConfig + "SmartBarter");
+      trade_money_msg = get_ini_string(iniConfig + "BarterCaps");
 
-      if (get_ini_setting(iniConfigFile + "UseOldHRP") > 0) then begin
+      if (get_ini_setting(iniConfig + "UseOldHRP") > 0) then begin
          x_shift_main := 9;
          x_shift_use := -95;
          x_shift_loot := 28;
       end
 
       if (isCrafry == false) then begin
-         drop_key_code := get_ini_setting(iniConfigFile + "DropAllButtonKey");
+         drop_key_code := get_ini_setting(iniConfig + "DropAllButtonKey");
          if drop_key_code < 0 then drop_key_code := 0;
          if (sfall_ver_major >= 4 and sfall_ver_minor >= 1) then begin
-            btnDropAll := get_ini_setting(iniConfigFile + "DropAllButton");
-            btnGiveAll := get_ini_setting(iniConfigFile + "UseGiveAllImage");
-            useBackImage  := get_ini_setting(iniConfigFile + "UseBackImage");
+            btnDropAll := get_ini_setting(iniConfig + "DropAllButton");
+            btnGiveAll := get_ini_setting(iniConfig + "UseGiveAllImage");
+            useBackImage  := get_ini_setting(iniConfig + "UseBackImage");
          end
       end
-      enable_swap := get_ini_setting(iniConfigFile + "SwapParty");
+      enable_swap := get_ini_setting(iniConfig + "SwapParty");
 
       if (sfall_version >= 4200) then begin
-         hotKeys := get_ini_section(iniConfig, "HotKeys");
+         hotKeys := get_ini_section(iniConfigFile, "HotKeys");
          foreach (temp : item in hotKeys) begin
             if (typeof(item) == VALTYPE_STR) then hotKeys[temp] := atoi(item);
          end
          fix_array(hotKeys);
       end
-      temp := get_ini_setting(iniConfigFile + "TextColor");
+      temp := get_ini_setting(iniConfig + "TextColor");
       switch (temp) begin
         case 1 : r := 0.72; g := 0.72; b := 0.2; // yellow
         case 2 : r := 0.9; g := 0.9; b := 0.9;   // near white
@@ -342,9 +343,9 @@ procedure start begin
       end
 
       if (enable_swap) then begin
-         swap_all_containers := get_ini_setting(iniConfigFile + "SwapContainers");
-         swap_loot_offset := get_ini_setting(iniConfigFile + "SwapLootOffset");
-         swap_barter_offset := get_ini_setting(iniConfigFile + "SwapBarterOffset");
+         swap_all_containers := get_ini_setting(iniConfig + "SwapContainers");
+         swap_loot_offset := get_ini_setting(iniConfig + "SwapLootOffset");
+         swap_barter_offset := get_ini_setting(iniConfig + "SwapBarterOffset");
       end
 
      #if DEBUG // test items
@@ -1094,16 +1095,16 @@ end
 
 procedure hBarter begin
 /*
-   critter arg1 - the critter doing the bartering (either dude_obj or inven_dude)
-   critter arg2 - the critter being bartered with
-   int     arg3 - the default value of the goods
-   critter arg4 - the barter critter (has all of the goods being traded in its inventory)
-   int     arg5 - the amount of actual caps in the barter stack (as opposed to goods)
-   int     arg6 - the value of all goods being traded before skill modifications
+   critter arg0 - the critter doing the bartering (either dude_obj or inven_dude)
+   critter arg1 - the critter being bartered with
+   int     arg2 - общая стоимость предложенных товаров у тоговца (the default value of the goods)
+   critter arg3 - the barter critter (has all of the goods being traded in its inventory)
+   int     arg4 - the amount of actual caps in the barter stack (as opposed to goods)
+   int     arg5 - цена всех товаров (the value of all goods being traded before skill modifications)
    +
-   critter arg7 - указатель на "стол" с предложенными игроком товарами
-   int     arg8 - общая стоимость предложенных игроком товаров (отдельно можно узнать количество денег с помощью item_caps_total(arg7))
-   int     arg9 - 1 если была нажата кнопка "предложения обмена" не сопартийцу, иначе 0.
+   critter arg6 - указатель на "стол" с предложенными игроком товарами
+   int     arg7 - общая стоимость предложенных игроком товаров (отдельно можно узнать количество денег с помощью item_caps_total(arg7))
+   int     arg8 - 1 если была нажата кнопка "предложения обмена" не сопартийцу, иначе 0.
 */
    variable barter_args, caps, diff, playerCost;
 
@@ -1119,25 +1120,24 @@ procedure hBarter begin
       pc_bTable := barter_args[6];
    end
 
-   if smart_barter and barter_args[8] and party_member_obj(obj_pid(trader_ptr) == 0) then begin
-      if (item_caps_total(pc_bTable) != barter_args[7]) then begin
-         diff := barter_args[2] - barter_args[7]; // разница цены в предложенных товарах, отрицательное - задолженность для торговца
-         if (diff < 0) then begin
-            caps := item_caps_total(trader_ptr);
-            if (caps > 0) then begin
-               if (0 - diff) > caps then diff := 0 - caps;
-            end else diff := 0;
-         end
-         else if (item_caps_total(dude_obj) < diff) then diff := 0;
+   if smart_barter and barter_args[8] and party_member_obj(obj_pid(trader_ptr)) == 0 then begin
+      diff := barter_args[2] - barter_args[7]; // разница цены в предложенных товарах, отрицательное - задолженность для торговца
+      if (diff < 0) then begin
+         caps := item_caps_total(trader_ptr);
+         if (caps > 0) then begin
+            if (0 - diff) > caps then diff := 0 - caps;
+         end else diff := 0;
+      end
+      else if (item_caps_total(pc_bTable) == 0 or item_caps_total(dude_obj) < diff) then diff := 0;
 
-         if (diff != 0) then begin
-            item_caps_adjust(dude_obj, -diff);
-            item_caps_adjust(trader_ptr, diff);
+      if (diff != 0) then begin
+         item_caps_adjust(dude_obj, -diff);
+         item_caps_adjust(trader_ptr, diff);
+         if (diff > 0 and trade_money_msg) then display_msg(sprintf(trade_money_msg, diff));
 
-            playerCost := barter_args[7];
-            set_sfall_arg(2, playerCost);
-            set_sfall_return(playerCost); // возвращаем цену для торговца равную общей стоимости товаров игрока
-         end
+         playerCost := barter_args[7];
+         set_sfall_arg(2, playerCost);
+         set_sfall_return(playerCost); // возвращаем цену для торговца равную общей стоимости товаров игрока
       end
    end
    if (inven_caps and enable_caps) then call trader_cost_win;
@@ -1152,11 +1152,11 @@ variable type  := get_sfall_arg, // event type: 1 - pressed, 0 - released
    if key == DIK_F11 and get_game_mode == 0 and type == 0 then begin
       if enable_filter then begin
          enable_filter := false;
-         display_msg(get_ini_string(iniConfigFile + "MsgOff")); //"Inventory Filter is disabled."
+         display_msg(get_ini_string(iniConfig + "MsgOff")); //"Inventory Filter is disabled."
          set_global_script_repeat(0);
       end else begin
          enable_filter := true;
-         display_msg(get_ini_string(iniConfigFile + "MsgOn") + SCRIPT_VERSION); //"Inventory Filter is enabled."
+         display_msg(get_ini_string(iniConfig + "MsgOn") + SCRIPT_VERSION); //"Inventory Filter is enabled."
          set_global_script_repeat(1 + (sfall_game_mode * 10));
       end
       set_sfall_global("INV_FLTR", not(enable_filter));
@@ -1295,7 +1295,7 @@ variable _curr_stack, text;
       _curr_stack := read_int(0x59E96C);  // проверить открыты ли сумки
       if _curr_stack > 0 then begin
         play_sfx("IISXXXX1");
-        text := get_ini_string(iniConfigFile + "MsgWarning");
+        text := get_ini_string(iniConfig + "MsgWarning");
         if not(dude_in_barter) then create_message_window(text); else display_msg(text);
       end
       else begin
@@ -1360,7 +1360,7 @@ variable _target_curr_stack, text;
        _target_curr_stack := read_int(0x59E948);  // проверить открыты ли сумки у цели
        if _target_curr_stack > 0 then begin
            play_sfx("IISXXXX1");
-           text := get_ini_string(iniConfigFile + "MsgWarning");
+           text := get_ini_string(iniConfig + "MsgWarning");
            if loot_filter then create_message_window(text); else display_msg(text);
        end
        else begin
@@ -1804,7 +1804,7 @@ procedure SwappingParty(variable type, variable value) begin
       flag := get_proto_data(obj_pid(ptr), PROTO_CR_FLAGS);
       if (flag bwand CFLG_BARTER) == false or (flag bwand CFLG_NOSTEAL) then skip := true;
       if skip or (tile_distance_objs(dude_obj, ptr) > 30) then begin
-         if not(skip) then display_msg(name + get_ini_string(iniConfigFile + "MsgSwap"));
+         if not(skip) then display_msg(name + get_ini_string(iniConfig + "MsgSwap"));
          current_swap_number += value;
          if (current_swap_number > len_party_array) then current_swap_number := 0;
          ptr := swap_party_array[current_swap_number];
@@ -1916,7 +1916,7 @@ procedure swap_button_pressed(variable btn) begin
       pressed_once := true;
 
       if dude_in_barter and not(btn_all) then begin
-         display_msg(get_ini_string(iniConfigFile + "MsgSwapFilter"));
+         display_msg(get_ini_string(iniConfig + "MsgSwapFilter"));
          play_sfx("IISXXXX1");
          return;
       end

@@ -1,11 +1,9 @@
-Inventory Filter version 1.6.2 by Mr.STALIN 
+Inventory Filter version 2.0 by Mr.STALIN 
 
-The plugin is fully functional with the versions of sfall v4.2.2+ with earlier versions may be some mistakes in his work.
+The plugin works with new versions starting from sFall v4.2.8.1
+ATTENTION: For the filter to work correctly, you need to enable the AllowUnsafeScripting option in the ddraw.ini configuration file (enabled automatically when installed).
 
-CAUTION: For the filter script to work correctly, required to enable the AllowUnsafeScripting option in the ddraw.ini file (enabled automatically during installation).
-
-To useful things of the category "Misc", for display added some items from the Olympus2207 and Fallout 2: Nevada. (from Foxx)
-Added Smart Barter mode - allowing the player during trading to not take care of money after the termination of the barter deal.
-Added a panel for convenient switching between party members during trade or exchange with the car.
-The new "Drop All" button is available only for sfall v4.1.0+ with the InterfaceDontMoveOnTop option enabled.
-Assign hot keys to switching between filtering modes (for sfall v4.2+).
+Additional features:
+Smart Barter Mode - allows the player to not worry about money at the end of a barter transaction during trading. 
+Swap mode - allows you to conveniently switch between party members during trading or exchange with containers/car trunk.
+Adds a "Drop all" button for the exchange interface with containers and party members.

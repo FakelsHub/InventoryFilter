@@ -1,12 +1,10 @@
-Using plugin:
-Use the middle mouse button on the "Weapon" and "Ammo" menu buttons to display these categories at the same time in the player's inventory,
-click the middle mouse button on the button "Misc" allows you to display useful items from the category miscellaneous.
+Usage:
+Use the middle mouse button on the "Weapons" and "Ammo" menu buttons to simultaneously display items of these categories in the player's inventory,
+also clicking the middle mouse button on the "Weapons" button allows you to display only guns weapon.
 
-Use keyboard hot-keys to quickly switch between the filter categories for:
+To quickly switch between filter categories, use the hot-keys:
 Player: Q, 1, 2, 3, 4, 5
-SPC: W, 6, 7, 8, 9, 0
+NPC:    W, 6, 7, 8, 9, 0
 Change keyboard hot-keys, you can in the configuration file.
 
-To activate or deactivate the plug-in in case of problems in the game with the filter, use the F11 key.
-
-When exchanging with containers or party members, instead of filtering items by type, items are sorted for the selected category.
+For activate or deactivate the filter use the F11 key.

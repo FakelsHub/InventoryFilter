@@ -1390,7 +1390,7 @@ procedure weight_win(variable weight, variable type) begin
 
    variable wMax := swapMaxWeight if (swapMaxWeight != -1) else dude_max_weight;
 
-   SetFont(1);
+   SetFont(101);
    if (current_swap_number > 0) then begin
       weight += who_carry_amount(swap_ptr); // swap-critter current equip items
       weight -= dudeEquipItemsWeight;
@@ -1427,7 +1427,7 @@ procedure weight_loot_win(variable obj) begin
       selectWin("inven_loot_weight");
       sfall_func0("win_fill_color");
    end
-   SetFont(1);
+   SetFont(101);
 
    if (obj_type(obj) == OBJ_TYPE_CRITTER) then begin
       weight = who_carry_amount(obj);
@@ -1725,7 +1725,7 @@ procedure barter_swap_win begin
 end
 
 procedure loot_swap_win begin
-   SetFont(1);
+   SetFont(101);
    if get_party_array(lootObject) then call create_swap_win(swap_loot_win_x + swap_loot_offset, swap_loot_win_y);
 end
 
